@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LiveAvatar Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --sand:     #f5f0e8;
+      --sand2:    #ede8df;
+      --sand3:    #e0d9ce;
+      --ink:      #1a1714;
+      --ink2:     #4a4540;
+      --ink3:     #8a8480;
+      --ink4:     #bab6b2;
+      --jade:     #1a6b52;
+      --jade-lt:  #e6f2ee;
+      --ember:    #c0390f;
+      --ember-lt: #fdf0ec;
+      --sky:      #1a5fa8;
+      --sky-lt:   #e8f1fb;
+      --amber:    #b56b00;
+      --amber-lt: #fdf4e3;
+      --white:    #ffffff;
+      --r4: 4px; --r8: 8px; --r12: 12px; --r20: 20px; --r999: 999px;
+      --shadow: 0 1px 3px rgba(26,23,20,.10), 0 4px 16px rgba(26,23,20,.07);
+      --tr: 0.16s ease;
+    }
+
+    html, body {
+      height: 100%; background: var(--sand);
+      color: var(--ink); font-family: 'Inter', system-ui, sans-serif;
+      font-size: 13px; line-height: 1.5; overflow: hidden;
+    }
+
+    /* ── Layout ───────────────────────────────────────────────── */
+    .app {
+      display: grid;
+      grid-template-rows: 56px 48px 1fr;
+      height: 100vh;
+    }
+
+    /* ── Navbar ───────────────────────────────────────────────── */
+    .navbar {
+      background: var(--white);
+      border-bottom: 1px solid var(--sand3);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px;
+    }
+    .nav-brand {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .brand-gem {
+      width: 32px; height: 32px; border-radius: var(--r8);
+      background: var(--ink); display: flex; align-items: center; justify-content: center;
+    }
+    .brand-gem svg { width: 16px; height: 16px; fill: var(--white); }
+    .brand-title { font-size: 15px; font-weight: 600; letter-spacing: -.02em; color: var(--ink); }
+    .brand-tag {
+      font-size: 10px; font-weight: 500; color: var(--ink3);
+      background: var(--sand2); border-radius: var(--r999);
+      padding: 2px 8px; letter-spacing: .02em;
+    }
+    .nav-status {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 500;
+    }
+    .ns-pip {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--ink4); transition: background var(--tr);
+    }
+    .ns-pip.live  { background: var(--jade); }
+    .ns-pip.busy  { background: var(--amber); animation: pulse-pip 1.2s infinite; }
+    .ns-pip.fail  { background: var(--ember); }
+    @keyframes pulse-pip { 0%,100%{opacity:1} 50%{opacity:.35} }
+    .ns-text { color: var(--ink2); transition: color var(--tr); }
+    .ns-text.live { color: var(--jade); }
+    .ns-text.fail { color: var(--ember); }
+    .nav-right { display: flex; align-items: center; gap: 8px; }
+    .nav-pill-btn {
+      height: 32px; padding: 0 14px; border-radius: var(--r999);
+      border: 1.5px solid var(--sand3); background: transparent;
+      font-size: 12px; font-weight: 500; font-family: inherit;
+      color: var(--ink2); cursor: pointer; transition: var(--tr);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .nav-pill-btn:hover { background: var(--sand); border-color: var(--ink4); }
+    .nav-pill-btn.primary {
+      background: var(--ink); border-color: var(--ink); color: var(--white);
+    }
+    .nav-pill-btn.primary:hover { background: var(--ink2); }
+    .nav-pill-btn.danger {
+      background: var(--ember-lt); border-color: rgba(192,57,15,.3); color: var(--ember);
+    }
+    .nav-pill-btn.danger:hover { background: #f8e0d9; }
+    .nav-pill-btn.restart {
+      background: var(--amber-lt); border-color: rgba(181,107,0,.3); color: var(--amber);
+    }
+    .nav-pill-btn.restart:hover { background: #faecc8; }
+    .nav-pill-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* ── Toolbar ──────────────────────────────────────────────── */
+    .toolbar {
+      background: var(--sand2);
+      border-bottom: 1px solid var(--sand3);
+      display: flex; align-items: center; gap: 6px;
+      padding: 0 24px; overflow-x: auto;
+    }
+    .tb-group { display: flex; align-items: center; gap: 4px; }
+    .tb-divider { width: 1px; height: 20px; background: var(--sand3); margin: 0 6px; flex-shrink: 0; }
+    .tb-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: var(--ink3); margin-right: 4px; white-space: nowrap; }
+    .tb-chip {
+      height: 28px; padding: 0 12px; border-radius: var(--r999);
+      border: 1.5px solid transparent; background: transparent;
+      font-size: 11px; font-weight: 500; font-family: inherit;
+      color: var(--ink2); cursor: pointer; transition: var(--tr);
+      display: flex; align-items: center; gap: 5px; white-space: nowrap;
+    }
+    .tb-chip:hover { background: var(--white); border-color: var(--sand3); }
+    .tb-chip.on { background: var(--white); border-color: var(--ink); color: var(--ink); }
+    .tb-chip.rec-chip.on { background: var(--ember-lt); border-color: rgba(192,57,15,.4); color: var(--ember); }
+    .tb-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .tb-dot.blink { animation: pulse-pip 1s infinite; }
+
+    /* ── Canvas area ──────────────────────────────────────────── */
+    .canvas-area {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      overflow: hidden;
+    }
+
+    /* ── Stage ────────────────────────────────────────────────── */
+    .stage {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: var(--sand); position: relative;
+      padding: 28px;
+    }
+    .stage-frame {
+      width: 100%; max-width: 620px;
+      aspect-ratio: 16/11;
+      background: var(--ink);
+      border-radius: var(--r20);
+      overflow: hidden; position: relative;
+      box-shadow: var(--shadow), 0 0 0 1px rgba(26,23,20,.12);
+    }
+    #video-canvas { width: 100%; height: 100%; display: block; }
+
+    .idle-screen {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 14px;
+      background: var(--ink);
+      transition: opacity .5s;
+    }
+    .idle-screen.gone { opacity: 0; pointer-events: none; }
+    .idle-avatar {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: #2a2520;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .idle-avatar svg { width: 36px; height: 36px; fill: #4a4540; }
+    .idle-text { color: #4a4540; font-size: 13px; text-align: center; line-height: 1.6; }
+
+    /* corner overlays */
+    .corner-badge {
+      position: absolute; border-radius: var(--r999);
+      font-size: 10px; font-weight: 600;
+      display: flex; align-items: center; gap: 5px;
+      padding: 4px 10px;
+    }
+    .live-tag {
+      top: 14px; left: 14px;
+      background: var(--ember); color: var(--white);
+      opacity: 0; pointer-events: none; transition: opacity .3s;
+    }
+    .live-tag.show { opacity: 1; }
+    .live-tag-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--white); animation: pulse-pip 1s infinite; }
+    .fps-tag {
+      top: 14px; right: 14px;
+      background: rgba(26,23,20,.6); color: #bab6b2;
+      font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    }
+    .audio-tag {
+      bottom: 14px; right: 14px;
+      background: rgba(26,23,20,.6); color: #bab6b2;
+      gap: 4px; opacity: 0; pointer-events: none; transition: opacity .25s;
+    }
+    .audio-tag.show { opacity: 1; }
+    .mini-bars { display: flex; align-items: center; gap: 1.5px; height: 10px; }
+    .mini-bars span { display: block; width: 2px; border-radius: 1px; background: #5DCAA5; animation: mb .8s infinite; }
+    .mini-bars span:nth-child(2) { animation-delay: .15s; }
+    .mini-bars span:nth-child(3) { animation-delay: .3s; }
+    @keyframes mb { 0%,100%{height:2px} 50%{height:9px} }
+
+    /* Stage bottom: waveform + transcript pill */
+    .stage-footer {
+      width: 100%; max-width: 620px;
+      margin-top: 16px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .waveform-strip {
+      flex: 1; height: 36px;
+      background: var(--white); border-radius: var(--r12);
+      border: 1px solid var(--sand3);
+      display: flex; align-items: center; justify-content: center; gap: 2px;
+      padding: 0 14px; overflow: hidden;
+    }
+    .wv { width: 3px; border-radius: 2px; background: var(--ink4); transition: height .07s; }
+    .stage-time {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; color: var(--ink3); white-space: nowrap;
+      background: var(--white); border: 1px solid var(--sand3);
+      border-radius: var(--r12); padding: 0 14px; height: 36px;
+      display: flex; align-items: center;
+    }
+
+    /* ── Right panel ──────────────────────────────────────────── */
+    .rpanel {
+      background: var(--white);
+      border-left: 1px solid var(--sand3);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    .rpanel-tabs {
+      display: flex; border-bottom: 1px solid var(--sand3); flex-shrink: 0;
+    }
+    .rptab {
+      flex: 1; padding: 10px 0; text-align: center;
+      font-size: 11px; font-weight: 500; color: var(--ink3);
+      border: none; background: transparent; cursor: pointer;
+      border-bottom: 2px solid transparent; transition: var(--tr);
+      font-family: inherit;
+    }
+    .rptab.active { color: var(--ink); border-bottom-color: var(--ink); }
+    .rpanel-body { flex: 1; overflow-y: auto; padding: 16px; }
+
+    /* hide inactive tab panels */
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* ── Upload area (inside panel) ────────────────────────────── */
+    .upload-drop {
+      border: 2px dashed var(--sand3); border-radius: var(--r12);
+      padding: 24px 16px; text-align: center; cursor: pointer;
+      transition: var(--tr); margin-bottom: 12px;
+    }
+    .upload-drop:hover, .upload-drop.over {
+      border-color: var(--sky); background: var(--sky-lt);
+    }
+    .upload-drop input { display: none; }
+    .upload-drop img { width: 100%; max-height: 130px; object-fit: cover; border-radius: var(--r8); display: none; }
+    .upload-icon {
+      width: 40px; height: 40px; border-radius: var(--r12);
+      background: var(--sand2); margin: 0 auto 10px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .upload-icon svg { width: 20px; height: 20px; stroke: var(--ink3); fill: none; stroke-width: 1.5; stroke-linecap: round; }
+    .upload-title { font-size: 13px; font-weight: 500; margin-bottom: 3px; }
+    .upload-hint  { font-size: 11px; color: var(--ink3); }
+
+    /* ── Section header in panel ───────────────────────────────── */
+    .ph { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: var(--ink3); margin: 14px 0 8px; }
+    .ph:first-child { margin-top: 0; }
+
+    /* ── Inline row ────────────────────────────────────────────── */
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+    .row-label { font-size: 11px; color: var(--ink2); }
+    .row-val   { font-size: 11px; font-weight: 500; color: var(--ink); font-family: 'JetBrains Mono', monospace; }
+
+    /* ── Slider ────────────────────────────────────────────────── */
+    .slider-wrap { margin-bottom: 14px; }
+    .slider-head { display: flex; justify-content: space-between; margin-bottom: 4px; }
+    .slider-head span { font-size: 11px; color: var(--ink2); }
+    .slider-head strong { font-size: 11px; font-weight: 600; color: var(--sky); }
+    input[type=range].sl {
+      width: 100%; accent-color: var(--sky);
+      height: 4px; cursor: pointer;
+    }
+    .slider-hint { font-size: 10px; color: var(--ink4); margin-top: 4px; line-height: 1.5; }
+
+    /* ── Sync indicator ────────────────────────────────────────── */
+    .sync-pill {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 10px; border-radius: var(--r8);
+      background: var(--sand2); margin-bottom: 12px;
+      font-size: 11px; color: var(--ink2);
+    }
+    .sync-led { width: 8px; height: 8px; border-radius: 50%; background: var(--ink4); flex-shrink: 0; transition: background .3s; }
+    .sync-led.ok   { background: var(--jade); }
+    .sync-led.warn { background: var(--amber); }
+
+    /* ── Stats tiles ───────────────────────────────────────────── */
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px; }
+    .stat-tile {
+      background: var(--sand); border-radius: var(--r8);
+      padding: 10px 12px; border: 1px solid var(--sand3);
+    }
+    .stat-num  { font-size: 18px; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+    .stat-lbl  { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--ink3); margin-top: 2px; }
+
+    /* ── Transcript log ────────────────────────────────────────── */
+    .transcript-log {
+      background: var(--sand); border: 1px solid var(--sand3);
+      border-radius: var(--r8); padding: 10px;
+      height: 120px; overflow-y: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; color: var(--ink2); line-height: 1.7;
+    }
+    .tw { color: #1a5fa8; animation: tw-in .35s ease forwards; }
+    @keyframes tw-in { from{opacity:0} to{opacity:1} }
+
+    /* ── Toast ─────────────────────────────────────────────────── */
+    .toast-bar {
+      position: fixed; bottom: 20px; left: 50%;
+      transform: translateX(-50%) translateY(64px);
+      background: var(--ink); color: var(--white);
+      border-radius: var(--r999); padding: 9px 18px;
+      font-size: 12px; font-weight: 500;
+      box-shadow: var(--shadow); z-index: 999;
+      transition: transform .3s cubic-bezier(.34,1.56,.64,1), opacity .3s;
+      opacity: 0; pointer-events: none; white-space: nowrap;
+    }
+    .toast-bar.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    .toast-bar.ok  { background: var(--jade); }
+    .toast-bar.err { background: var(--ember); }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--sand3); border-radius: 2px; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── Navbar ── -->
+  <nav class="navbar">
+    <div class="nav-brand">
+      <div class="brand-gem">
+        <svg viewBox="0 0 16 16"><path d="M8 1L3 5v6l5 4 5-4V5L8 1zm0 2.2l3.5 2.8v4.2L8 12.8 4.5 10.2V6L8 3.2z"/></svg>
+      </div>
+      <span class="brand-title">LiveAvatar</span>
+      <span class="brand-tag">Studio</span>
+    </div>
+    <div class="nav-status">
+      <div class="ns-pip" id="ns-pip"></div>
+      <span class="ns-text" id="ns-text">Offline</span>
+    </div>
+    <div class="nav-right">
+      <button class="nav-pill-btn restart" id="btn-restart" title="Restart the server process">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 6A4 4 0 1 1 7 2.1"/><path d="M7 1v3h3"/>
+        </svg>
+        <span>Restart Server</span>
+      </button>
+      <!-- Single unified button: Connect + Mic together -->
+      <button class="nav-pill-btn primary" id="btn-connect" disabled>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" id="conn-icon-svg"><path d="M2 6h8M7 3l3 3-3 3"/></svg>
+        <span id="conn-label">Connect</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ── Toolbar ── -->
+  <div class="toolbar">
+    <span class="tb-label">Sync</span>
+    <div class="tb-group">
+      <button class="tb-chip on" id="mode-auto-btn">Auto</button>
+      <button class="tb-chip" id="mode-manual-btn">Manual</button>
+    </div>
+    <div class="tb-divider"></div>
+    <span class="tb-label">Session</span>
+    <div class="tb-group">
+      <span style="font-size:11px;color:var(--ink3);font-family:'JetBrains Mono',monospace;" id="tb-session">Loading…</span>
+    </div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:6px;">
+      <span style="font-size:11px;color:var(--ink3);">Uptime</span>
+      <span style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--ink2);" id="tb-uptime">—</span>
+    </div>
+  </div>
+
+  <!-- ── Canvas area ── -->
+  <div class="canvas-area">
+
+    <!-- Stage -->
+    <div class="stage">
+      <div class="stage-frame">
+        <div class="idle-screen" id="idle-screen">
+          <div class="idle-avatar">
+            <svg viewBox="0 0 36 36"><circle cx="18" cy="13" r="6"/><path d="M6 30c0-7 5.4-12 12-12s12 5 12 12"/></svg>
+          </div>
+          <div class="idle-text">Upload a portrait &amp; connect<br><span style="font-size:11px;color:#3a3630;">Moshi · Bridge · Ditto</span></div>
+        </div>
+        <canvas id="video-canvas" width="640" height="480"></canvas>
+        <div class="corner-badge live-tag" id="live-tag">
+          <div class="live-tag-dot"></div>LIVE
+        </div>
+        <div class="corner-badge fps-tag" id="fps-tag">— fps</div>
+        <div class="corner-badge audio-tag" id="audio-tag">
+          <div class="mini-bars"><span></span><span></span><span></span></div>
+          Audio
+        </div>
+      </div>
+
+      <!-- Stage footer -->
+      <div class="stage-footer">
+        <div class="waveform-strip" id="waveform-strip">
+          <div class="wv" style="height:4px"></div>
+          <div class="wv" style="height:8px"></div>
+          <div class="wv" style="height:5px"></div>
+          <div class="wv" style="height:12px"></div>
+          <div class="wv" style="height:6px"></div>
+          <div class="wv" style="height:16px"></div>
+          <div class="wv" style="height:9px"></div>
+          <div class="wv" style="height:5px"></div>
+          <div class="wv" style="height:13px"></div>
+          <div class="wv" style="height:7px"></div>
+          <div class="wv" style="height:4px"></div>
+          <div class="wv" style="height:10px"></div>
+          <div class="wv" style="height:6px"></div>
+          <div class="wv" style="height:8px"></div>
+          <div class="wv" style="height:4px"></div>
+        </div>
+        <div class="stage-time" id="stage-time">00:00</div>
+      </div>
+    </div>
+
+    <!-- Right panel -->
+    <div class="rpanel">
+      <div class="rpanel-tabs">
+        <button class="rptab active" data-tab="setup">Setup</button>
+        <button class="rptab" data-tab="sync">Sync</button>
+      </div>
+      <div class="rpanel-body">
+
+        <!-- Setup tab -->
+        <div class="tab-pane active" id="tab-setup">
+
+          <!-- Default portrait indicator -->
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--jade-lt);border:1px solid rgba(26,107,82,.2);border-radius:var(--r8);margin-bottom:12px;">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--jade)" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
+            <div>
+              <div style="font-size:11px;font-weight:600;color:var(--jade);">Default portrait active</div>
+              <div style="font-size:10px;color:var(--ink3);font-family:'JetBrains Mono',monospace;" id="default-img-label">obama.jpeg</div>
+            </div>
+          </div>
+
+          <p class="ph">Stats</p>
+          <div class="stats-grid">
+            <div class="stat-tile">
+              <div class="stat-num" id="stat-frames" style="color:var(--sky)">0</div>
+              <div class="stat-lbl">Frames</div>
+            </div>
+            <div class="stat-tile">
+              <div class="stat-num" id="stat-fps" style="color:var(--jade)">—</div>
+              <div class="stat-lbl">FPS</div>
+            </div>
+            <div class="stat-tile">
+              <div class="stat-num" id="stat-audio" style="color:var(--amber)">0</div>
+              <div class="stat-lbl">Audio pkts</div>
+            </div>
+            <div class="stat-tile">
+              <div class="stat-num" id="stat-latency" style="color:var(--ember)">—</div>
+              <div class="stat-lbl">1st frame</div>
+            </div>
+          </div>
+
+          <p class="ph">Transcript</p>
+          <div class="transcript-log" id="transcript"></div>
+          <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+            <button id="btn-clear" style="font-size:11px;padding:5px 12px;border-radius:var(--r999);border:1px solid var(--sand3);background:transparent;color:var(--ink3);cursor:pointer;font-family:inherit;transition:var(--tr);">Clear log</button>
+          </div>
+
+          <p class="ph" style="margin-top:16px;">Mic / Volume</p>
+          <div style="height:4px;background:var(--sand3);border-radius:2px;overflow:hidden;">
+            <div id="vol-bar" style="height:100%;width:0%;background:var(--jade);border-radius:2px;transition:width .06s linear;"></div>
+          </div>
+        </div>
+
+        <!-- Sync tab -->
+        <div class="tab-pane" id="tab-sync">
+          <p class="ph">Status</p>
+          <div class="sync-pill">
+            <div class="sync-led" id="sync-led"></div>
+            <span id="sync-text">Waiting for signal…</span>
+          </div>
+
+          <p class="ph">Audio offset</p>
+          <div class="slider-wrap">
+            <div class="slider-head">
+              <span>Fine-tune lip sync</span>
+              <strong id="av-val">0 ms</strong>
+            </div>
+            <input type="range" class="sl" id="av-slider" min="-500" max="500" value="0" step="25" />
+            <p class="slider-hint">Negative = advance audio &nbsp;·&nbsp; Positive = delay audio</p>
+          </div>
+
+          <p class="ph">History (last 10s)</p>
+          <div class="row"><span class="row-label">Avg offset</span><span class="row-val" id="sync-avg">—</span></div>
+          <div class="row"><span class="row-label">Drift status</span><span class="row-val" id="sync-drift">—</span></div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast-bar" id="toast"></div>
+
+<script>
+'use strict';
+
+/* ══════════════════════════════════════════════════
+   CONSTANTS
+   ══════════════════════════════════════════════════ */
+const SAMPLE_RATE       = 24000;
+const SAMPLES_PER_CHUNK = 1920;
+const CHUNK_DURATION_S  = SAMPLES_PER_CHUNK / SAMPLE_RATE;
+const LOOKAHEAD_S       = 0.02;
+const MAX_VIDEO_BUFFER  = 80;
+const MAX_AUDIO_BUFFER  = 200;
+const MAX_FRAME_WAIT_S  = 2.0;
+
+/* ══════════════════════════════════════════════════
+   STATE
+   ══════════════════════════════════════════════════ */
+let ws = null, sessionId = null;
+let mediaRecorder = null;
+let audioCtx = null, analyserNode = null, volRafId = null;
+let isConnected = false, isRecording = false;
+let connectStartMs = 0, firstFrameMs = null, uptimeStart = null;
+
+// Load default session ID from server on page load
+async function loadDefaultSession() {
+  try {
+    const res = await fetch('/default_session');
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    sessionId = data.session_id;
+    document.getElementById('tb-session').textContent = 'obama.jpeg';
+    $btnConn.disabled = false;
+    setStatus('Ready', '');
+  } catch (e) {
+    document.getElementById('tb-session').textContent = 'Error';
+    setStatus('Session error', 'fail');
+    toast('Could not load default session: ' + e.message, 'err');
+  }
+}
+// (called after DOM refs are set up, below)
+
+let _audioBaseTime   = null;
+let _syncEstablished = false;
+let _pendingAudio    = [];
+let _avOffsetS       = 0.0;
+
+const videoFrameMap  = new Map();
+let _currentBmp      = null;
+
+let framesReceived = 0, audioPackets = 0;
+let fpsCount = 0, fpsLast = performance.now();
+let renderRafId = null;
+let _syncOffsetTotal = 0, _syncOffsetN = 0;
+
+/* ══════════════════════════════════════════════════
+   DOM
+   ══════════════════════════════════════════════════ */
+const canvas       = document.getElementById('video-canvas');
+const ctx2d        = canvas.getContext('2d');
+const $nsPip       = document.getElementById('ns-pip');
+const $nsText      = document.getElementById('ns-text');
+const $btnConn     = document.getElementById('btn-connect');
+const $connLabel   = document.getElementById('conn-label');
+const $volBar      = document.getElementById('vol-bar');
+const $xscript     = document.getElementById('transcript');
+const $idleScreen  = document.getElementById('idle-screen');
+const $liveTag     = document.getElementById('live-tag');
+const $audioTag    = document.getElementById('audio-tag');
+const $fpsBadge    = document.getElementById('fps-tag');
+const $toast       = document.getElementById('toast');
+const $statF       = document.getElementById('stat-frames');
+const $statFps     = document.getElementById('stat-fps');
+const $statA       = document.getElementById('stat-audio');
+const $statL       = document.getElementById('stat-latency');
+const $syncLed     = document.getElementById('sync-led');
+const $syncText    = document.getElementById('sync-text');
+const $avSlider    = document.getElementById('av-slider');
+const $avVal       = document.getElementById('av-val');
+const $syncAvg     = document.getElementById('sync-avg');
+const $syncDrift   = document.getElementById('sync-drift');
+const $tbUptime    = document.getElementById('tb-uptime');
+const $stageTime   = document.getElementById('stage-time');
+const $wvBars      = document.querySelectorAll('.wv');
+
+// Fetch the default session now that all DOM refs and helpers are defined
+loadDefaultSession();
+
+/* ══════════════════════════════════════════════════
+   TAB SWITCHING
+   ══════════════════════════════════════════════════ */
+document.querySelectorAll('.rptab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.rptab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+/* ══════════════════════════════════════════════════
+   MODE TOGGLE
+   ══════════════════════════════════════════════════ */
+document.getElementById('mode-auto-btn').addEventListener('click', () => {
+  document.getElementById('mode-auto-btn').classList.add('on');
+  document.getElementById('mode-manual-btn').classList.remove('on');
+});
+document.getElementById('mode-manual-btn').addEventListener('click', () => {
+  document.getElementById('mode-manual-btn').classList.add('on');
+  document.getElementById('mode-auto-btn').classList.remove('on');
+});
+
+/* ══════════════════════════════════════════════════
+   AV SLIDER
+   ══════════════════════════════════════════════════ */
+$avSlider.addEventListener('input', () => {
+  const ms = parseInt($avSlider.value, 10);
+  _avOffsetS = ms / 1000;
+  $avVal.textContent = (ms >= 0 ? '+' : '') + ms + ' ms';
+});
+
+/* ══════════════════════════════════════════════════
+   TOAST
+   ══════════════════════════════════════════════════ */
+let _toastT;
+function toast(msg, type = '') {
+  $toast.textContent = msg;
+  $toast.className = 'toast-bar show ' + type;
+  clearTimeout(_toastT);
+  _toastT = setTimeout(() => { $toast.className = 'toast-bar'; }, 3200);
+}
+
+/* ══════════════════════════════════════════════════
+   STATUS
+   ══════════════════════════════════════════════════ */
+function setStatus(label, state = '') {
+  $nsText.textContent = label;
+  $nsText.className   = 'ns-text ' + state;
+  $nsPip.className    = 'ns-pip ' + state;
+}
+
+/* ══════════════════════════════════════════════════
+   TICKER (uptime, stage time)
+   ══════════════════════════════════════════════════ */
+setInterval(() => {
+  if (uptimeStart) {
+    const s   = Math.floor((Date.now() - uptimeStart) / 1000);
+    const m   = Math.floor(s / 60), sec = s % 60;
+    const str = m + ':' + sec.toString().padStart(2, '0');
+    $tbUptime.textContent   = str;
+    $stageTime.textContent  = str;
+  }
+}, 800);
+
+/* ══════════════════════════════════════════════════
+   WAVEFORM
+   ══════════════════════════════════════════════════ */
+let _wfRaf;
+function startWaveform() {
+  function tick() {
+    if (!isRecording) {
+      $wvBars.forEach(b => { b.style.height = '4px'; b.style.background = 'var(--ink4)'; });
+      return;
+    }
+    $wvBars.forEach(b => {
+      b.style.height = (3 + Math.random() * 16) + 'px';
+      b.style.background = 'var(--jade)';
+    });
+    _wfRaf = requestAnimationFrame(tick);
+  }
+  tick();
+}
+
+/* ══════════════════════════════════════════════════
+   (Upload section removed — default session used)
+   ══════════════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════
+   AUDIO
+   ══════════════════════════════════════════════════ */
+async function initAudio() {
+  if (audioCtx) { if (audioCtx.state === 'suspended') await audioCtx.resume(); return; }
+  audioCtx = new AudioContext({ sampleRate: SAMPLE_RATE, latencyHint: 'interactive' });
+  await audioCtx.resume();
+}
+
+function _scheduleChunk(seq, float32) {
+  if (!audioCtx || _audioBaseTime === null) return false;
+  const startTime = _audioBaseTime + seq * CHUNK_DURATION_S + _avOffsetS;
+  const now = audioCtx.currentTime;
+  if (startTime < now - 0.15) return false;
+  const buf = audioCtx.createBuffer(1, float32.length, SAMPLE_RATE);
+  buf.copyToChannel(float32, 0);
+  const src = audioCtx.createBufferSource();
+  src.buffer = buf; src.connect(audioCtx.destination);
+  src.start(Math.max(startTime, now + 0.002));
+  return true;
+}
+
+function handleAudio(seq, float32) {
+  audioPackets++; $statA.textContent = audioPackets;
+  $audioTag.classList.add('show');
+  clearTimeout(handleAudio._t);
+  handleAudio._t = setTimeout(() => $audioTag.classList.remove('show'), 900);
+  if (!_syncEstablished) {
+    if (_pendingAudio.length >= MAX_AUDIO_BUFFER) _pendingAudio.shift();
+    _pendingAudio.push({ seq, float32 });
+  } else {
+    _scheduleChunk(seq, float32);
+  }
+}
+
+function _releaseLatch() {
+  if (_syncEstablished) return;
+  _syncEstablished = true;
+  _audioBaseTime = audioCtx.currentTime + LOOKAHEAD_S;
+  let sc = 0, dr = 0;
+  for (const { seq, float32 } of _pendingAudio) {
+    if (_scheduleChunk(seq, float32)) sc++; else dr++;
+  }
+  _pendingAudio = [];
+  $syncLed.className = 'sync-led ok';
+  $syncText.textContent = 'A/V sync locked';
+}
+
+function handleVideo(seq, jpegAB) {
+  framesReceived++; $statF.textContent = framesReceived;
+  if (!_syncEstablished) _releaseLatch();
+  const addedAt = audioCtx ? audioCtx.currentTime : 0;
+  if (videoFrameMap.size >= MAX_VIDEO_BUFFER) {
+    const old = Math.min(...videoFrameMap.keys());
+    const e = videoFrameMap.get(old);
+    if (e && e.bmp) e.bmp.close();
+    videoFrameMap.delete(old);
+  }
+  createImageBitmap(new Blob([jpegAB], { type: 'image/jpeg' }))
+    .then(bmp => { if (!isConnected) { bmp.close(); return; } videoFrameMap.set(seq, { bmp, addedAt }); })
+    .catch(() => {});
+  if (!firstFrameMs) {
+    firstFrameMs = performance.now() - connectStartMs;
+    $statL.textContent = Math.round(firstFrameMs) + 'ms';
+    $idleScreen.classList.add('gone');
+    $liveTag.classList.add('show');
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   RENDER LOOP
+   ══════════════════════════════════════════════════ */
+function startRenderLoop() {
+  fpsLast = performance.now(); fpsCount = 0;
+  function tick(nowMs) {
+    renderRafId = requestAnimationFrame(tick);
+    if (videoFrameMap.size > 0 && audioCtx) {
+      const nowA = audioCtx.currentTime;
+      const ready = [];
+      for (const [seq, { addedAt }] of videoFrameMap) {
+        let r = false;
+        if (_audioBaseTime !== null) {
+          r = nowA >= (_audioBaseTime + seq * CHUNK_DURATION_S + _avOffsetS);
+          if (!r && (nowA - addedAt) > MAX_FRAME_WAIT_S) r = true;
+        } else if ((nowA - addedAt) > MAX_FRAME_WAIT_S) { r = true; }
+        if (r) ready.push(seq);
+      }
+      if (ready.length > 0) {
+        ready.sort((a, b) => a - b);
+        if (_audioBaseTime !== null) {
+          const lr  = ready[ready.length - 1];
+          const exp = _audioBaseTime + lr * CHUNK_DURATION_S;
+          _syncOffsetTotal += (audioCtx.currentTime - exp) * 1000;
+          _syncOffsetN++;
+        }
+        for (let i = 0; i < ready.length; i++) {
+          const e = videoFrameMap.get(ready[i]);
+          videoFrameMap.delete(ready[i]);
+          if (!e) continue;
+          if (i === ready.length - 1) { if (_currentBmp) _currentBmp.close(); _currentBmp = e.bmp; fpsCount++; }
+          else e.bmp.close();
+        }
+      }
+    }
+    if (_currentBmp) ctx2d.drawImage(_currentBmp, 0, 0, canvas.width, canvas.height);
+
+    if (nowMs - fpsLast >= 1000) {
+      const elapsed = nowMs - fpsLast;
+      const fps     = Math.round(fpsCount * 1000 / elapsed);
+      $fpsBadge.textContent = fps + ' fps';
+      $statFps.textContent  = fps;
+      if (_syncEstablished && _syncOffsetN > 0) {
+        const avg = Math.round(_syncOffsetTotal / _syncOffsetN);
+        const abs = Math.abs(avg);
+        $syncAvg.textContent   = (avg >= 0 ? '+' : '') + avg + ' ms';
+        $syncDrift.textContent = abs < 80 ? 'Good' : abs < 250 ? 'Drifting' : 'High';
+        if (abs < 80) { $syncLed.className = 'sync-led ok'; $syncText.textContent = fps + ' fps · tight sync'; }
+        else if (abs < 250) { $syncLed.className = 'sync-led warn'; $syncText.textContent = fps + ' fps · slight drift'; }
+        else { $syncLed.className = 'sync-led'; $syncText.textContent = fps + ' fps · adjust offset'; }
+        _syncOffsetTotal = 0; _syncOffsetN = 0;
+      }
+      fpsCount = 0; fpsLast = nowMs;
+    }
+  }
+  renderRafId = requestAnimationFrame(tick);
+}
+
+/* ══════════════════════════════════════════════════
+   CONNECT / DISCONNECT  (unified — mic starts automatically)
+   ══════════════════════════════════════════════════ */
+$btnConn.addEventListener('click', () => { if (isConnected) disconnect(); else connect(); });
+
+async function connect() {
+  if (!sessionId) { toast('Session not ready yet', 'err'); return; }
+  await initAudio();
+  _audioBaseTime = null; _syncEstablished = false; _pendingAudio = [];
+  _syncOffsetTotal = 0; _syncOffsetN = 0;
+  videoFrameMap.forEach(e => e.bmp && e.bmp.close()); videoFrameMap.clear();
+  if (_currentBmp) { _currentBmp.close(); _currentBmp = null; }
+  framesReceived = 0; audioPackets = 0; firstFrameMs = null;
+  $statF.textContent = '0'; $statA.textContent = '0';
+  $statFps.textContent = '—'; $statL.textContent = '—';
+  $syncLed.className = 'sync-led'; $syncText.textContent = 'Waiting for signal…';
+
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${proto}://${location.host}/ws/${sessionId}`);
+  ws.binaryType = 'arraybuffer';
+  setStatus('Connecting…', 'busy');
+  connectStartMs = performance.now();
+
+  ws.onopen = async () => {
+    isConnected = true; uptimeStart = Date.now();
+    setStatus('Live', 'live');
+    $connLabel.textContent = 'Disconnect';
+    $btnConn.classList.remove('primary');
+    $btnConn.classList.add('danger');
+    toast('Connected — mic starting…', 'ok');
+    startRenderLoop();
+    // Auto-start microphone immediately after connection
+    await startRecording();
+  };
+
+  ws.onmessage = (ev) => {
+    const buf  = ev.data; const view = new Uint8Array(buf); const kind = view[0];
+    if (kind === 0x01) { if (buf.byteLength < 6) return; handleAudio(new DataView(buf).getUint32(1, false), new Float32Array(buf.slice(5))); }
+    else if (kind === 0x02) { if (buf.byteLength < 6) return; handleVideo(new DataView(buf).getUint32(1, false), buf.slice(5)); }
+    else if (kind === 0x03) { appendTranscript(new TextDecoder().decode(buf.slice(1))); }
+    else if (kind === 0xFF) { toast('Server: ' + new TextDecoder().decode(buf.slice(1)), 'err'); disconnect(); }
+  };
+
+  ws.onclose = () => onDisconnected();
+  ws.onerror = () => { toast('WebSocket error', 'err'); onDisconnected(); };
+}
+
+function disconnect() {
+  if (ws) { try { ws.close(); } catch (_) {} ws = null; }
+  stopRecording();
+  onDisconnected();
+}
+
+function onDisconnected() {
+  isConnected = false; uptimeStart = null;
+  $connLabel.textContent = 'Connect';
+  $btnConn.classList.remove('danger');
+  $btnConn.classList.add('primary');
+  setStatus('Ready', '');
+  $liveTag.classList.remove('show');
+  $audioTag.classList.remove('show');
+  cancelAnimationFrame(renderRafId);
+  videoFrameMap.forEach(e => e.bmp && e.bmp.close()); videoFrameMap.clear();
+  if (_currentBmp) { _currentBmp.close(); _currentBmp = null; }
+  _audioBaseTime = null; _syncEstablished = false; _pendingAudio = [];
+  $syncLed.className = 'sync-led'; $syncText.textContent = 'Waiting for signal…';
+  $tbUptime.textContent = '—'; $stageTime.textContent = '00:00';
+}
+
+/* ══════════════════════════════════════════════════
+   MICROPHONE  (called automatically by connect())
+   ══════════════════════════════════════════════════ */
+async function startRecording() {
+  if (!isConnected) return;
+  if (audioCtx && audioCtx.state === 'suspended') await audioCtx.resume();
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    isRecording = true;
+    const inputSrc = audioCtx.createMediaStreamSource(stream);
+    analyserNode = audioCtx.createAnalyser(); analyserNode.fftSize = 256;
+    inputSrc.connect(analyserNode);
+    animateVolume(); startWaveform();
+    const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/ogg;codecs=opus';
+    mediaRecorder = new MediaRecorder(stream, { mimeType: mime, audioBitsPerSecond: 32000 });
+    mediaRecorder.ondataavailable = async (ev) => {
+      if (!ws || ws.readyState !== WebSocket.OPEN || ev.data.size === 0) return;
+      const ab  = await ev.data.arrayBuffer();
+      const msg = new Uint8Array(1 + ab.byteLength);
+      msg[0] = 0x01; msg.set(new Uint8Array(ab), 1); ws.send(msg.buffer);
+    };
+    mediaRecorder.start(80);
+    toast('Live — speak now', 'ok');
+  } catch (e) {
+    toast('Mic error: ' + e.message, 'err');
+    isRecording = false;
+  }
+}
+
+function stopRecording() {
+  isRecording = false;
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop(); mediaRecorder.stream.getTracks().forEach(t => t.stop());
+  }
+  mediaRecorder = null;
+  cancelAnimationFrame(volRafId); $volBar.style.width = '0%';
+  analyserNode = null;
+  cancelAnimationFrame(_wfRaf);
+  $wvBars.forEach(b => { b.style.height = '4px'; b.style.background = 'var(--ink4)'; });
+}
+
+function animateVolume() {
+  const data = new Uint8Array(analyserNode.frequencyBinCount);
+  const tick = () => {
+    if (!analyserNode) return;
+    analyserNode.getByteFrequencyData(data);
+    const avg = data.reduce((s, v) => s + v, 0) / data.length;
+    $volBar.style.width = Math.min(avg * 2.2, 100) + '%';
+    volRafId = requestAnimationFrame(tick);
+  };
+  tick();
+}
+
+/* ══════════════════════════════════════════════════
+   TRANSCRIPT
+   ══════════════════════════════════════════════════ */
+function appendTranscript(text) {
+  const s = document.createElement('span');
+  s.className = 'tw'; s.textContent = text;
+  $xscript.appendChild(s);
+  $xscript.scrollTop = $xscript.scrollHeight;
+  setTimeout(() => s.classList.remove('tw'), 500);
+}
+document.getElementById('btn-clear').addEventListener('click', () => { $xscript.innerHTML = ''; });
+
+/* ══════════════════════════════════════════════════
+   RESTART SERVER
+   ══════════════════════════════════════════════════ */
+const $btnRestart = document.getElementById('btn-restart');
+$btnRestart.addEventListener('click', async () => {
+  if (!confirm('Restart the server process?\n\nThe page will reload after ~3 seconds.')) return;
+  $btnRestart.disabled = true;
+  $btnRestart.querySelector('span').textContent = 'Restarting…';
+  disconnect();   // close any open WS session first
+  try {
+    const res = await fetch('/restart', { method: 'POST' });
+    if (res.ok) {
+      toast('Server restarting — page will reload…', 'ok');
+      // Poll /health until the server is back up, then reload
+      setTimeout(async () => {
+        const MAX_POLLS = 30;
+        for (let i = 0; i < MAX_POLLS; i++) {
+          await new Promise(r => setTimeout(r, 1500));
+          try {
+            const hres = await fetch('/health', { signal: AbortSignal.timeout(1500) });
+            if (hres.ok) { location.reload(); return; }
+          } catch (_) { /* server not up yet */ }
+        }
+        toast('Server did not come back — please reload manually.', 'err');
+        $btnRestart.disabled = false;
+        $btnRestart.querySelector('span').textContent = 'Restart Server';
+      }, 1000);
+    } else {
+      throw new Error(await res.text());
+    }
+  } catch (e) {
+    toast('Restart failed: ' + e.message, 'err');
+    $btnRestart.disabled = false;
+    $btnRestart.querySelector('span').textContent = 'Restart Server';
+  }
+});
+</script>
+</body>
+</html>
